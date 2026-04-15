@@ -4,6 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>台灣資本市場與全球經濟表現相對比較 (2008-2026, 真實資料)</title>
+  <meta name="description" content="以真實資料比較 TAIEX 發行量加權股價報酬指數與 VT 調整後收盤價在台灣不同執政時期的相對績效走勢。" />
+  <meta name="robots" content="index,follow" />
+  <meta name="theme-color" content="#14202b" />
+  <link rel="canonical" href="https://kacaw.github.io/TAIEXtoVT/" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="icon" type="image/png" sizes="512x512" href="./favicon-512.png" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="manifest" href="./site.webmanifest" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="zh_TW" />
+  <meta property="og:title" content="台灣資本市場與全球經濟表現相對比較 (2008-2026, 真實資料)" />
+  <meta property="og:description" content="比較 TAIEX 報酬指數與 VT Adjusted Close 在馬英九、蔡英文、賴清德三段任期中的相對績效。" />
+  <meta property="og:url" content="https://kacaw.github.io/TAIEXtoVT/" />
+  <meta property="og:image" content="https://kacaw.github.io/TAIEXtoVT/og-cover.png" />
+  <meta property="og:image:alt" content="TAIEX Total Return 與 VT 調整後收盤價相對績效比較圖卡" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="台灣資本市場與全球經濟表現相對比較" />
+  <meta name="twitter:description" content="以真實資料比較 TAIEX 報酬指數與 VT Adjusted Close 的跨執政時期表現。" />
+  <meta name="twitter:image" content="https://kacaw.github.io/TAIEXtoVT/og-cover.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;800&display=swap" rel="stylesheet" />
@@ -223,6 +242,52 @@
       <div class="mt-4 flex flex-col gap-2 border-t border-slate-900/10 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <p id="periodSummary">可視區間：馬英九、蔡英文、賴清德三段。</p>
         <p>顏色背景代表執政區間；滑鼠移入可查看當日真實點數與基準化值。</p>
+      </div>
+    </section>
+
+    <section class="panel mt-6 rounded-[28px] px-5 py-5 sm:px-6 lg:px-8">
+      <div class="grid gap-5 lg:grid-cols-[1.15fr_1.15fr_0.9fr]">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">資料來源</p>
+          <div class="mt-3 space-y-3 text-sm leading-6 text-slate-700">
+            <p>
+              <span class="font-bold text-slate-900">TAIEX：</span>
+              台灣證券交易所「發行量加權股價報酬指數」開放資料，採官方日資料。
+            </p>
+            <p>
+              <span class="font-bold text-slate-900">VT：</span>
+              Yahoo Finance 歷史序列，使用 <span class="font-semibold">Adjusted Close</span> 作為含配息與拆分調整後的可比序列。
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">方法說明</p>
+          <div class="mt-3 space-y-3 text-sm leading-6 text-slate-700">
+            <p>圖表支援以各執政起點歸一化為 100，並顯示各任期內的真實起訖點數與倍率。</p>
+            <p>倍率定義為「任期結束 ÷ 任期開始」；相對倍率為「TAIEX 任期倍率 ÷ VT 任期倍率」。</p>
+            <p>全站目前資料區間為 2008.06.26 至 2026.04.15。</p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">免責聲明</p>
+          <div class="mt-3 space-y-3 text-sm leading-6 text-slate-700">
+            <p>本頁僅供資訊視覺化與歷史比較，不構成投資建議、招攬或任何保證。</p>
+            <p>VT 使用 Adjusted Close 作為總報酬代理，並非 Vanguard 官方 Total Return Index 點位。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 flex flex-col gap-2 border-t border-slate-900/10 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          <a class="font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-900" href="https://data.gov.tw/dataset/11871" target="_blank" rel="noreferrer">TWSE 開放資料</a>
+          ·
+          <a class="font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-900" href="https://finance.yahoo.com/quote/VT/history/" target="_blank" rel="noreferrer">VT Historical Data</a>
+        </p>
+        <p>
+          <a class="font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-900" href="https://github.com/Kacaw/TAIEXtoVT" target="_blank" rel="noreferrer">GitHub Repository</a>
+        </p>
       </div>
     </section>
   </main>
