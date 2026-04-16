@@ -314,6 +314,40 @@
         </p>
       </div>
     </section>
+
+    <section class="panel mt-6 rounded-[28px] px-5 py-5 sm:px-6 lg:px-8">
+      <div class="flex flex-col gap-2 border-b border-slate-900/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Ratio Overview</p>
+          <h2 class="mt-2 text-2xl font-extrabold text-ink">相對倍率總覽</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-600" id="ratioTableCaption">
+            依目前所選台股版本與 benchmark，列出各任期的起訖點數、台股倍率、benchmark 倍率與相對倍率。
+          </p>
+        </div>
+        <p class="text-xs leading-5 text-slate-500" id="ratioTableHint">可左右滑動表格查看完整欄位。</p>
+      </div>
+
+      <div class="mt-4 overflow-x-auto rounded-[22px] border border-slate-900/10 bg-white/88">
+        <table class="min-w-full border-separate border-spacing-0 text-sm" id="ratioTable">
+          <thead class="bg-slate-50/90">
+            <tr class="text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">任期</th>
+              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">期間</th>
+              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">台股起訖</th>
+              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">Benchmark 起訖</th>
+              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">台股倍率</th>
+              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">Benchmark 倍率</th>
+              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">相對倍率</th>
+            </tr>
+          </thead>
+          <tbody id="ratioTableBody">
+            <tr>
+              <td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">載入中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </main>
   <script src="app.js"></script>
 </body>
