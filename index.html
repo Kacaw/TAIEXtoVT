@@ -103,16 +103,24 @@
     .field {
       width: 100%;
       appearance: none;
-      border-radius: 999px;
-      border: 1px solid rgba(20, 32, 43, 0.10);
-      background: rgba(255, 255, 255, 0.92);
+      cursor: pointer;
+      border-radius: 18px;
+      border: 1px solid rgba(20, 32, 43, 0.12);
+      background: rgba(255, 255, 255, 0.96);
       color: #14202b;
       font-size: 0.95rem;
       font-weight: 700;
       line-height: 1.25rem;
-      padding: 0.9rem 1rem;
+      padding: 0.95rem 3rem 0.95rem 1rem;
+      box-shadow: 0 10px 24px rgba(20, 32, 43, 0.06);
       outline: none;
-      transition: border-color 180ms ease, box-shadow 180ms ease;
+      transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background-color 180ms ease;
+    }
+
+    .field:hover {
+      border-color: rgba(25, 79, 152, 0.24);
+      box-shadow: 0 14px 28px rgba(20, 32, 43, 0.08);
+      transform: translateY(-1px);
     }
 
     .field:focus {
@@ -123,6 +131,53 @@
     .field:disabled {
       cursor: not-allowed;
       opacity: 0.55;
+    }
+
+    .control-card {
+      display: block;
+      border-radius: 24px;
+      border: 1px solid rgba(20, 32, 43, 0.10);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 242, 233, 0.92));
+      padding: 1rem;
+      transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+
+    .control-card:hover {
+      border-color: rgba(25, 79, 152, 0.16);
+      box-shadow: 0 18px 36px rgba(20, 32, 43, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .control-card:focus-within {
+      border-color: rgba(25, 79, 152, 0.26);
+      box-shadow: 0 0 0 4px rgba(25, 79, 152, 0.08), 0 18px 36px rgba(20, 32, 43, 0.08);
+    }
+
+    .field-shell {
+      position: relative;
+      display: block;
+      margin-top: 0.75rem;
+    }
+
+    .field-shell::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: 1.15rem;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-right: 2px solid #194f98;
+      border-bottom: 2px solid #194f98;
+      transform: translateY(-68%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    .control-help {
+      display: block;
+      margin-top: 0.7rem;
+      font-size: 0.75rem;
+      line-height: 1.2rem;
+      color: #64748b;
     }
 
     @media (max-width: 1024px) {
@@ -162,7 +217,7 @@
           <div>
             <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">資料方法</p>
             <p class="mt-2 text-2xl font-extrabold text-ink">TAIEX vs Benchmark</p>
-            <p class="mt-1 text-xs leading-5 text-slate-600" id="methodHint">TAIEX 使用 TWSE 官方報酬指數；benchmark 使用 Yahoo Finance Adjusted Close。全球模式自 2008.06.26 起，其餘市場可延伸至 2003 年。</p>
+            <p class="mt-1 text-xs leading-5 text-slate-600" id="methodHint">台股版本使用 TWSE 官方 TAIEX 發行量加權股價報酬指數。benchmark 端使用 VT Yahoo Finance Adjusted Close。VT 起點較晚是因 ETF 本身成立較晚；全球模式的第一個共同可比日從 2008.06.26 開始。</p>
           </div>
           <div class="relative metric-cut">
             <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">目前模式</p>
@@ -173,47 +228,82 @@
       </div>
     </header>
 
-    <section class="panel mt-8 rounded-[32px] px-4 pb-4 pt-4 sm:px-6 sm:pb-6 lg:mt-10 lg:px-8 lg:pb-8 lg:pt-6">
+    <section class="panel mt-8 rounded-[28px] px-5 py-5 sm:px-6 lg:px-8">
+      <div class="flex flex-col gap-2 border-b border-slate-900/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Ratio Overview</p>
+          <h2 class="mt-2 text-2xl font-extrabold text-ink">相對倍率總覽</h2>
+          <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-600" id="ratioTableCaption">
+            相對倍率代表「台股在該任期的累積倍率 ÷ 同任期該市場的累積倍率」，可直接視為台股相對該市場的強弱；大於 1 代表台股較強，小於 1 代表相對落後。
+          </p>
+        </div>
+        <p class="max-w-md text-xs leading-5 text-slate-500" id="ratioTableHint">分成兩個台股版本區塊；縱向是任期，橫向是市場。每個市場欄位內，最佳任期以暖色標示，最差任期以冷色標示；`—` 代表該任期無共同可比資料。</p>
+      </div>
+
+      <div class="mt-4 grid gap-4 xl:grid-cols-2" id="ratioMatrixContainer">
+        <div class="rounded-[22px] border border-slate-900/10 bg-white/88 px-4 py-6 text-center text-sm text-slate-500">
+          載入中...
+        </div>
+      </div>
+    </section>
+
+    <section class="panel mt-6 rounded-[32px] px-4 pb-4 pt-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8 lg:pt-6">
       <div class="grid gap-4 border-b border-slate-900/10 pb-5 xl:grid-cols-4">
-        <label class="block">
-          <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">台股版本</span>
-          <select id="taiwanSeries" class="field">
-            <option value="taiex" selected>TAIEX TR（官方）</option>
-            <option value="taiex_ex_tsmc">TAIEX ex-TSMC（估算）</option>
-          </select>
+        <label class="control-card">
+          <span class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">台股版本</span>
+          <span class="mt-1 block text-base font-extrabold text-ink">選擇台股序列</span>
+          <span class="field-shell">
+            <select id="taiwanSeries" class="field">
+              <option value="taiex" selected>TAIEX TR（官方）</option>
+              <option value="taiex_ex_tsmc">TAIEX ex-TSMC（估算）</option>
+            </select>
+          </span>
+          <span class="control-help">可在官方含息報酬指數與扣除台積電貢獻後的估算版之間切換。</span>
         </label>
 
-        <label class="block">
-          <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">比較市場</span>
-          <select id="benchmark" class="field">
-            <optgroup label="全球市場">
-              <option value="vt" selected>VT 全球市場</option>
-            </optgroup>
-            <optgroup label="美國市場">
-              <option value="vti">VTI 美國市場</option>
-            </optgroup>
-            <optgroup label="亞洲市場">
-              <option value="ewj">EWJ 日本</option>
-              <option value="ewy">EWY 韓國</option>
-              <option value="ews">EWS 新加坡</option>
-              <option value="ewh">EWH 香港</option>
-            </optgroup>
-          </select>
+        <label class="control-card">
+          <span class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">比較市場</span>
+          <span class="mt-1 block text-base font-extrabold text-ink">選擇比較基準</span>
+          <span class="field-shell">
+            <select id="benchmark" class="field">
+              <optgroup label="全球市場">
+                <option value="vt" selected>VT 全球市場</option>
+              </optgroup>
+              <optgroup label="美國市場">
+                <option value="vti">VTI 美國市場</option>
+              </optgroup>
+              <optgroup label="亞洲市場">
+                <option value="ewj">EWJ 日本</option>
+                <option value="ewy">EWY 韓國</option>
+                <option value="ews">EWS 新加坡</option>
+                <option value="ewh">EWH 香港</option>
+              </optgroup>
+            </select>
+          </span>
+          <span class="control-help" id="benchmarkControlHint">VT 起點較晚是因 ETF 本身成立較晚；VTI 與亞洲單一國家 ETF 成立較早，因此可回溯到更前面的資料。</span>
         </label>
 
-        <label class="block">
-          <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">歸一化基準</span>
-          <select id="baseline" class="field"></select>
+        <label class="control-card">
+          <span class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">歸一化基準</span>
+          <span class="mt-1 block text-base font-extrabold text-ink">選擇起算任期</span>
+          <span class="field-shell">
+            <select id="baseline" class="field"></select>
+          </span>
+          <span class="control-help">把所選任期起點設為 100，用同一把尺比較各段相對報酬。</span>
         </label>
 
-        <label class="block">
-          <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">資料密度</span>
-          <select id="resolution" class="field">
-            <option value="daily">每日</option>
-            <option value="weekly">每週</option>
-            <option value="monthly" selected>每月</option>
-            <option value="quarterly">每季</option>
-          </select>
+        <label class="control-card">
+          <span class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">資料密度</span>
+          <span class="mt-1 block text-base font-extrabold text-ink">選擇觀察節奏</span>
+          <span class="field-shell">
+            <select id="resolution" class="field">
+              <option value="daily">每日</option>
+              <option value="weekly">每週</option>
+              <option value="monthly" selected>每月</option>
+              <option value="quarterly">每季</option>
+            </select>
+          </span>
+          <span class="control-help">想看波動改用日或週；想看長期趨勢可切回月或季。</span>
         </label>
       </div>
 
@@ -226,7 +316,7 @@
         <div class="rounded-[24px] border border-slate-900/10 bg-white/85 p-4">
           <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500" id="benchmarkMetricLabel">最新 Benchmark Adj Close</p>
           <p class="mt-2 text-3xl font-extrabold text-vt" id="benchmarkMetric">148.33</p>
-          <p class="mt-1 text-xs text-slate-600" id="benchmarkMetricNote">調整後收盤價，含配息與拆分調整</p>
+          <p class="mt-1 text-xs text-slate-600" id="benchmarkMetricNote">Vanguard Total World ETF 調整後收盤價，含配息與拆分調整；VT 基準點較晚，主因是基金成立時間較晚。</p>
         </div>
         <div class="rounded-[24px] border border-slate-900/10 bg-white/85 p-4">
           <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">倍率定義</p>
@@ -315,26 +405,8 @@
       </div>
     </section>
 
-    <section class="panel mt-6 rounded-[28px] px-5 py-5 sm:px-6 lg:px-8">
-      <div class="flex flex-col gap-2 border-b border-slate-900/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Ratio Overview</p>
-          <h2 class="mt-2 text-2xl font-extrabold text-ink">相對倍率總覽</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-600" id="ratioTableCaption">
-            相對倍率代表「台股在該任期的累積倍率 ÷ 同任期該市場的累積倍率」，可直接視為台股相對該市場的強弱；大於 1 代表台股較強，小於 1 代表相對落後。
-          </p>
-        </div>
-        <p class="text-xs leading-5 text-slate-500" id="ratioTableHint">分成兩個台股版本區塊；縱向是任期，橫向是市場。每個市場欄位內，最佳任期以暖色標示，最差任期以冷色標示；`—` 代表該任期無共同可比資料。</p>
-      </div>
-
-      <div class="mt-4 grid gap-4 xl:grid-cols-2" id="ratioMatrixContainer">
-        <div class="rounded-[22px] border border-slate-900/10 bg-white/88 px-4 py-6 text-center text-sm text-slate-500">
-          載入中...
-        </div>
-      </div>
-    </section>
   </main>
-  <script src="app.js?v=20260416-3"></script>
+  <script src="app.js?v=20260416-4"></script>
 </body>
 </html>
 

@@ -148,18 +148,18 @@ const taiwanSeriesConfigs = {
     seriesKey: "taiex_ex_tsmc",
     shortName: "TAIEX ex-TSMC（估算）",
     datasetLabel: "TAIEX ex-TSMC Estimated",
-    metricLabel: "最新 ex-TSMC 估算值",
-    metricNote: "以月頻台積電權重估算反推之台股序列，非官方指數",
+    metricLabel: "最新 ex-TSMC 估算報酬指數",
+    metricNote: "近似代表扣除台積電貢獻後的台股報酬指數，採月頻權重估算",
     legendLabel: "TAIEX ex-TSMC（估算）",
     sourceLabel: "台股估算序列：",
     sourceCopy:
-      "以 TWSE 官方 TAIEX 報酬指數、2330.TW Adjusted Close、Yahoo split events 與 FSC 上市市值月資料反推之估算序列。",
+      "以 TWSE 官方 TAIEX 報酬指數、2330.TW Adjusted Close、Yahoo split events 與 FSC 上市市值月資料反推，用來近似台股扣除台積電貢獻後的報酬指數路徑。",
     methodLabel:
-      "台股版本改用 TAIEX ex-TSMC 估算值；台積電權重以『當前股本 + Yahoo split events 回推股數 + FSC 上市市值月資料』估算，並在月觀測點間 piecewise hold。",
+      "台股版本改用扣除台積電貢獻後的台股報酬指數估算值；台積電權重以『當前股本 + Yahoo split events 回推股數 + FSC 上市市值月資料』估算，並在月觀測點間 piecewise hold。",
     chartNarrativeNote:
-      "台股序列改為 ex-TSMC 估算值；台積電權重採月頻估算並於日頻報酬計算中沿用前一觀測值。",
-    proxyLabel: "台股 = ex-TSMC 估算序列",
-    disclaimer: "台股 ex-TSMC 為估算序列，不等同 TWSE 官方指數；權重採月頻估算，僅供歷史比較。",
+      "台股序列改為扣除台積電貢獻後的報酬指數估算值；台積電權重採月頻估算並於日頻報酬計算中沿用前一觀測值。",
+    proxyLabel: "台股 = ex-TSMC 估算報酬指數",
+    disclaimer: "台股 ex-TSMC 近似代表扣除台積電貢獻後的台股報酬指數，不等同 TWSE 官方指數；權重採月頻估算，僅供歷史比較。",
     links: [
       { label: "FSC 股票發行概況", url: "https://data.gov.tw/dataset/103533" },
       { label: "研究說明", url: "https://github.com/Kacaw/TAIEXtoVT/blob/codex/ex-tsmc-estimate/research/ex-tsmc-estimate.md" }
@@ -242,6 +242,9 @@ const benchmarkConfigs = {
     chartNarrative:
       "全圖以真實日資料重新取樣。TAIEX 使用 TWSE 官方含息報酬指數；目前 benchmark 使用全球股市 ETF VT 的 Adjusted Close 作為含息可比序列，可觀察台灣與全球市場的相對強弱。",
     proxyNotice: "TAIEX = 官方報酬指數；VT = 調整後收盤價。",
+    benchmarkWindowNote: "VT 起點較晚是因 ETF 本身成立較晚；全球模式的第一個共同可比日從 2008.06.26 開始。",
+    benchmarkControlHint: "VT 起點較晚是因 ETF 本身成立較晚；全球模式的第一個共同可比日從 2008.06.26 開始。",
+    benchmarkMetricHint: "VT 基準點較晚，主因是基金成立時間較晚。",
     rangeDetailTemplate: (context) => `VT 模式資料區間為 ${formatDate(context.startTs)} 至 ${formatDate(context.endTs)}。`,
     sourceBenchmarkLabel: "VT：",
     sourceBenchmarkCopy:
@@ -274,6 +277,9 @@ const benchmarkConfigs = {
     chartNarrative:
       "全圖以真實日資料重新取樣。TAIEX 使用 TWSE 官方含息報酬指數；目前 benchmark 使用美國總市場 ETF VTI 的 Adjusted Close 作為含息可比序列，可觀察台灣與美國市場的相對強弱。",
     proxyNotice: "TAIEX = 官方報酬指數；VTI = 調整後收盤價。",
+    benchmarkWindowNote: "VTI 成立較早，因此美國模式可回溯至 2003.01.02；不是額外回填或代理區間。",
+    benchmarkControlHint: "VTI 成立較早，因此美國模式可回溯至 2003.01.02；能納入較長的歷史比較。",
+    benchmarkMetricHint: "VTI 基準點可更早，主因是基金成立時間較早。",
     rangeDetailTemplate: (context) => `VTI 模式資料區間為 ${formatDate(context.startTs)} 至 ${formatDate(context.endTs)}；陳水扁任期以可得資料起點開始計算。`,
     sourceBenchmarkLabel: "VTI：",
     sourceBenchmarkCopy:
@@ -306,6 +312,9 @@ const benchmarkConfigs = {
     chartNarrative:
       "全圖以真實日資料重新取樣。TAIEX 使用 TWSE 官方含息報酬指數；目前 benchmark 使用日本股市 ETF EWJ 的 Adjusted Close 作為含息可比序列，可觀察台灣與日本市場的相對強弱。",
     proxyNotice: "TAIEX = 官方報酬指數；EWJ = 調整後收盤價。",
+    benchmarkWindowNote: "EWJ 成立較早，因此日本模式可回溯至 2003.01.02。",
+    benchmarkControlHint: "EWJ 成立較早，因此日本模式可回溯至 2003.01.02。",
+    benchmarkMetricHint: "EWJ 成立較早，因此可觀察較長歷史區間。",
     rangeDetailTemplate: (context) => `EWJ 模式資料區間為 ${formatDate(context.startTs)} 至 ${formatDate(context.endTs)}；陳水扁任期以可得資料起點開始計算。`,
     sourceBenchmarkLabel: "EWJ：",
     sourceBenchmarkCopy:
@@ -338,6 +347,9 @@ const benchmarkConfigs = {
     chartNarrative:
       "全圖以真實日資料重新取樣。TAIEX 使用 TWSE 官方含息報酬指數；目前 benchmark 使用韓國股市 ETF EWY 的 Adjusted Close 作為含息可比序列，可觀察台灣與韓國市場的相對強弱。",
     proxyNotice: "TAIEX = 官方報酬指數；EWY = 調整後收盤價。",
+    benchmarkWindowNote: "EWY 成立較早，因此韓國模式可回溯至 2003.01.02。",
+    benchmarkControlHint: "EWY 成立較早，因此韓國模式可回溯至 2003.01.02。",
+    benchmarkMetricHint: "EWY 成立較早，因此可觀察較長歷史區間。",
     rangeDetailTemplate: (context) => `EWY 模式資料區間為 ${formatDate(context.startTs)} 至 ${formatDate(context.endTs)}；陳水扁任期以可得資料起點開始計算。`,
     sourceBenchmarkLabel: "EWY：",
     sourceBenchmarkCopy:
@@ -370,6 +382,9 @@ const benchmarkConfigs = {
     chartNarrative:
       "全圖以真實日資料重新取樣。TAIEX 使用 TWSE 官方含息報酬指數；目前 benchmark 使用新加坡股市 ETF EWS 的 Adjusted Close 作為含息可比序列，可觀察台灣與新加坡市場的相對強弱。",
     proxyNotice: "TAIEX = 官方報酬指數；EWS = 調整後收盤價。",
+    benchmarkWindowNote: "EWS 成立較早，因此新加坡模式可回溯至 2003.01.02。",
+    benchmarkControlHint: "EWS 成立較早，因此新加坡模式可回溯至 2003.01.02。",
+    benchmarkMetricHint: "EWS 成立較早，因此可觀察較長歷史區間。",
     rangeDetailTemplate: (context) => `EWS 模式資料區間為 ${formatDate(context.startTs)} 至 ${formatDate(context.endTs)}；陳水扁任期以可得資料起點開始計算。`,
     sourceBenchmarkLabel: "EWS：",
     sourceBenchmarkCopy:
@@ -402,6 +417,9 @@ const benchmarkConfigs = {
     chartNarrative:
       "全圖以真實日資料重新取樣。TAIEX 使用 TWSE 官方含息報酬指數；目前 benchmark 使用香港股市 ETF EWH 的 Adjusted Close 作為含息可比序列，可觀察台灣與香港市場的相對強弱。",
     proxyNotice: "TAIEX = 官方報酬指數；EWH = 調整後收盤價。",
+    benchmarkWindowNote: "EWH 成立較早，因此香港模式可回溯至 2003.01.02。",
+    benchmarkControlHint: "EWH 成立較早，因此香港模式可回溯至 2003.01.02。",
+    benchmarkMetricHint: "EWH 成立較早，因此可觀察較長歷史區間。",
     rangeDetailTemplate: (context) => `EWH 模式資料區間為 ${formatDate(context.startTs)} 至 ${formatDate(context.endTs)}；陳水扁任期以可得資料起點開始計算。`,
     sourceBenchmarkLabel: "EWH：",
     sourceBenchmarkCopy:
@@ -459,7 +477,8 @@ const metrics = {
   sourceLinks: document.getElementById("sourceLinks"),
   ratioTableCaption: document.getElementById("ratioTableCaption"),
   ratioTableHint: document.getElementById("ratioTableHint"),
-  ratioMatrixContainer: document.getElementById("ratioMatrixContainer")
+  ratioMatrixContainer: document.getElementById("ratioMatrixContainer"),
+  benchmarkControlHint: document.getElementById("benchmarkControlHint")
 };
 
 const state = {
@@ -838,8 +857,8 @@ function buildRatioMatrixSection(taiwanKey) {
 
   const note =
     taiwanContext.key === "taiex_ex_tsmc"
-      ? "台股版本為 ex-TSMC 估算序列，倍率僅供歷史比較。"
-      : "台股版本為 TWSE 官方 TAIEX 報酬指數。";
+      ? "台股版本改為扣除台積電貢獻後的報酬指數估算值，用來觀察 ex-TSMC 的相對強弱。"
+      : "台股版本為 TWSE 官方 TAIEX 含息報酬指數。";
 
   return `
     <section class="overflow-hidden rounded-[22px] border border-slate-900/10 bg-white/88">
@@ -895,9 +914,9 @@ function updateSummary(context, series, baselineKey, resolution) {
 
   metrics.heroDescription.textContent =
     taiwanContext.key === "taiex_ex_tsmc"
-      ? `${context.heroText} 目前台股版本已切換為 ex-TSMC 估算序列。`
+      ? `${context.heroText} 目前台股版本已切換為扣除台積電貢獻後的台股報酬指數估算值。`
       : context.heroText;
-  metrics.methodHint.textContent = `${taiwanContext.methodLabel} benchmark 端使用 ${context.shortName} Yahoo Finance Adjusted Close。${benchmarkWindowNote}`;
+  metrics.methodHint.textContent = `${taiwanContext.methodLabel} benchmark 端使用 ${context.shortName} Yahoo Finance Adjusted Close。${context.benchmarkWindowNote || benchmarkWindowNote}`;
   metrics.modeBadge.textContent = `${modeLabel} / ${context.controlLabel} / ${resolutionSettings[resolution].label}`;
   metrics.basisLabel.textContent = `基準點：${baselinePeriod.displayLabel} ${formatDate(baselinePeriod.startTs)} = 100`;
   metrics.taiwanMetricLabel.textContent = taiwanContext.metricLabel;
@@ -910,7 +929,8 @@ function updateSummary(context, series, baselineKey, resolution) {
   metrics.benchmarkMetricLabel.textContent = context.metricLabel;
   metrics.benchmarkMetric.textContent = formatValue(latest.rawBenchmark, context.metricDigits);
   metrics.benchmarkMetric.style.color = context.color;
-  metrics.benchmarkMetricNote.textContent = context.metricNote;
+  metrics.benchmarkMetricNote.textContent = `${context.metricNote}；${context.benchmarkMetricHint || benchmarkWindowNote}`;
+  metrics.benchmarkControlHint.textContent = context.benchmarkControlHint || benchmarkWindowNote;
   metrics.proxyNotice.textContent = `${taiwanContext.proxyLabel}；${context.shortName} = 調整後收盤價。`;
   metrics.officialWindow.textContent = `本頁顯示範圍：${formatDate(context.startTs)} - ${formatDate(context.endTs)}。`;
   metrics.periodSummary.textContent = `可視區間：${context.administrations.map((period) => period.displayLabel).join("、")}。`;
