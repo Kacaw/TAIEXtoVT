@@ -731,23 +731,36 @@ function buildSourceLinksHtml(context) {
     .join(" · ");
 }
 
-function buildRatioTableRows(comparisons, taiwanContext, benchmarkContext) {
-  return comparisons
+function buildAllRatioTableRows() {
+  const taiwanKeys = Object.keys(taiwanSeriesConfigs);
+  const benchmarkKeys = Object.keys(benchmarkConfigs);
+  const rows = [];
+
+  taiwanKeys.forEach((taiwanKey) => {
+    const taiwanContext = getTaiwanSeriesContext(taiwanKey);
+
+    benchmarkKeys.forEach((benchmarkKey) => {
+      const benchmarkContext = getBenchmarkContext(benchmarkKey, taiwanContext);
+      const comparisons = buildAdministrationComparisons(benchmarkContext);
+
+      comparisons.forEach((period) => {
+        rows.push({
+          taiwanContext,
+          benchmarkContext,
+          period
+        });
+      });
+    });
+  });
+
+  return rows
     .map(
-      (period, index) => `
-        <tr class="${index < comparisons.length - 1 ? "border-b border-slate-900/10" : ""}">
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-bold text-slate-900">${period.displayLabel}</td>
+      ({ taiwanContext, benchmarkContext, period }) => `
+        <tr>
+          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-bold" style="color:${taiwanContext.color}">${taiwanContext.shortName}</td>
+          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-bold" style="color:${benchmarkContext.color}">${benchmarkContext.shortName}</td>
+          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top text-slate-900">${period.displayLabel}</td>
           <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top text-slate-600">${formatDate(period.startTs)} → ${formatDate(period.endTs)}</td>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top text-slate-600">
-            <span class="font-semibold" style="color:${taiwanContext.color}">${formatValue(period.taiexStart.value, 2)}</span>
-            <span class="text-slate-400">→</span>
-            <span class="font-semibold" style="color:${taiwanContext.color}">${formatValue(period.taiexEnd.value, 2)}</span>
-          </td>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top text-slate-600">
-            <span class="font-semibold" style="color:${benchmarkContext.color}">${formatValue(period.benchmarkStart.value, benchmarkContext.rawDigits)}</span>
-            <span class="text-slate-400">→</span>
-            <span class="font-semibold" style="color:${benchmarkContext.color}">${formatValue(period.benchmarkEnd.value, benchmarkContext.rawDigits)}</span>
-          </td>
           <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-extrabold" style="color:${taiwanContext.color}">${period.taiexRatio.toFixed(2)}x</td>
           <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-extrabold" style="color:${benchmarkContext.color}">${period.benchmarkRatio.toFixed(2)}x</td>
           <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top text-lg font-extrabold text-ink">${period.relativeRatio.toFixed(2)}x</td>
@@ -816,12 +829,9 @@ function updateSummary(context, series, baselineKey, resolution) {
   metrics.sourceBenchmarkCopy.innerHTML = context.sourceBenchmarkCopy;
   metrics.disclaimerBenchmarkCopy.textContent = [taiwanContext.disclaimer, context.disclaimerCopy].filter(Boolean).join(" ");
   metrics.sourceLinks.innerHTML = buildSourceLinksHtml(context);
-  metrics.ratioTableCaption.textContent = `依目前所選「${taiwanContext.shortName}」與「${context.shortName}」，列出各任期的起訖點數與倍率。`;
-  metrics.ratioTableHint.textContent =
-    taiwanContext.key === "taiex_ex_tsmc"
-      ? "ex-TSMC 為估算序列；相對倍率僅供歷史比較。可左右滑動表格查看完整欄位。"
-      : "可左右滑動表格查看完整欄位。";
-  metrics.ratioTableBody.innerHTML = buildRatioTableRows(comparisons, taiwanContext, context);
+  metrics.ratioTableCaption.textContent = "一次列出所有台股版本、所有 benchmark 與所有任期的倍率，方便直接橫向比較差異。";
+  metrics.ratioTableHint.textContent = "表格固定顯示全部組合；ex-TSMC 為估算序列，相關倍率僅供歷史比較。";
+  metrics.ratioTableBody.innerHTML = buildAllRatioTableRows();
 
   metrics.administrationGrid.className = [
     "mt-4",
