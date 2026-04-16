@@ -818,7 +818,7 @@ function buildRatioMatrixSection(taiwanKey) {
   const headerCells = ratioMatrixBenchmarkOrder
     .map((benchmarkKey) => {
       const benchmarkContext = benchmarkConfigs[benchmarkKey];
-      return `<th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3 text-center" style="color:${benchmarkContext.color}">${ratioMatrixBenchmarkLabels[benchmarkKey]}</th>`;
+      return `<th class="border-b border-slate-900/10 px-2 py-3 text-center align-middle text-[12px] font-extrabold leading-tight sm:px-3" style="color:${benchmarkContext.color}">${ratioMatrixBenchmarkLabels[benchmarkKey]}</th>`;
     })
     .join("");
 
@@ -826,7 +826,7 @@ function buildRatioMatrixSection(taiwanKey) {
     .map(
       (row) => `
         <tr>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 font-bold text-slate-900">${row.label}</td>
+          <td class="border-b border-slate-900/10 px-2 py-4 align-middle text-sm font-extrabold text-slate-900 sm:px-3">${row.label}</td>
           ${ratioMatrixBenchmarkOrder
             .map((benchmarkKey) => {
               const ratio = comparisonMap[benchmarkKey]?.[row.key];
@@ -847,7 +847,7 @@ function buildRatioMatrixSection(taiwanKey) {
                   : highlightKey === "worst"
                     ? "最低"
                     : "";
-              return `<td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 text-center">${Number.isFinite(ratio) ? `<span class="inline-flex items-center justify-center rounded-full px-3 py-1 text-base font-extrabold" style="${style.chip}" title="${label ? `${ratioMatrixBenchmarkLabels[benchmarkKey]} 在 ${row.label} 為${label}相對倍率` : `${ratioMatrixBenchmarkLabels[benchmarkKey]} 相對倍率`}">${ratio.toFixed(2)}x</span>` : "—"}</td>`;
+              return `<td class="border-b border-slate-900/10 px-1 py-3 text-center align-middle sm:px-2">${Number.isFinite(ratio) ? `<span class="inline-flex min-w-[4.55rem] items-center justify-center rounded-full px-2 py-1 text-sm font-extrabold leading-none sm:min-w-[4.9rem] sm:text-[15px]" style="${style.chip}" title="${label ? `${ratioMatrixBenchmarkLabels[benchmarkKey]} 在 ${row.label} 為${label}相對倍率` : `${ratioMatrixBenchmarkLabels[benchmarkKey]} 相對倍率`}">${ratio.toFixed(2)}x</span>` : "<span class=\"text-sm font-bold text-slate-400\">—</span>"}</td>`;
             })
             .join("")}
         </tr>
@@ -867,11 +867,11 @@ function buildRatioMatrixSection(taiwanKey) {
         <h3 class="mt-2 text-xl font-extrabold" style="color:${taiwanContext.color}">${taiwanContext.shortName}</h3>
         <p class="mt-2 text-xs leading-5 text-slate-500">${note}</p>
       </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full border-separate border-spacing-0 text-sm">
+      <div class="overflow-hidden">
+        <table class="w-full table-fixed border-separate border-spacing-0 text-[13px] sm:text-sm">
           <thead class="bg-slate-50/90">
             <tr class="text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">任期</th>
+              <th class="border-b border-slate-900/10 px-2 py-3 align-middle sm:px-3">任期</th>
               ${headerCells}
             </tr>
           </thead>

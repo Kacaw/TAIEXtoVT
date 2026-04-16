@@ -34,6 +34,7 @@ TSMC_BALANCE_SHEET_URL = "https://mopsfin.twse.com.tw/opendata/t187ap07_L_ci.csv
 LISTED_MARKET_OVERVIEW_URL = (
     "https://stat.fsc.gov.tw/FSC_OAS3_RESTORE/api/CSV_EXPORT?DATA_TYPE=1&OUTPUT_FILE=Y&TableID=A01"
 )
+TAIEX_OPEN_DATA_URL = "https://www.twse.com.tw/indicesReport/MFI94U?response=open_data"
 
 
 def iso_date_from_timestamp(timestamp: int) -> str:
@@ -60,6 +61,21 @@ def quarter_end_date(year: int, quarter: int) -> str:
 
 def clean_number(raw: str) -> float:
     return float(raw.replace(",", "").strip().strip('"'))
+
+
+def roc_date_to_iso(raw: str) -> str:
+    digits = re.sub(r"\D", "", raw)
+    if len(digits) == 7:
+        year = int(digits[:3]) + 1911
+        month = int(digits[3:5])
+        day = int(digits[5:7])
+        return f"{year:04d}-{month:02d}-{day:02d}"
+    if len(digits) == 8:
+        year = int(digits[:4])
+        month = int(digits[4:6])
+        day = int(digits[6:8])
+        return f"{year:04d}-{month:02d}-{day:02d}"
+    raise ValueError(f"Unsupported date format: {raw}")
 
 
 def read_legacy_series(series_id: str) -> list[tuple[str, float]]:
@@ -122,6 +138,14 @@ def read_csv_series(path: Path) -> list[tuple[str, float]]:
 
     rows.sort(key=lambda item: item[0])
     return rows
+
+
+def merge_series(*series_groups: list[tuple[str, float]]) -> list[tuple[str, float]]:
+    merged: dict[str, float] = {}
+    for rows in series_groups:
+        for date, value in rows:
+            merged[date] = value
+    return sorted(merged.items())
 
 
 def fetch_text(url: str) -> str:
@@ -197,6 +221,32 @@ def fetch_yahoo_chart(symbol: str) -> list[dict[str, float | str]]:
         split_map = {str(item["date"]): float(item["factor"]) for item in split_events}
         for row in rows:
           row["splitFactor"] = split_map.get(str(row["date"]), 1.0)
+    return rows
+
+
+def fetch_taiex_open_data() -> list[tuple[str, float]]:
+    rows: list[tuple[str, float]] = []
+    reader = csv.reader(fetch_text(TAIEX_OPEN_DATA_URL).splitlines())
+
+    for row in reader:
+        if len(row) < 2:
+            continue
+
+        date_raw = row[0].strip().strip('"')
+        value_raw = row[1].strip().strip('"')
+
+        if "日" in date_raw and "期" in date_raw:
+            continue
+
+        try:
+            date = roc_date_to_iso(date_raw)
+            value = clean_number(value_raw)
+        except ValueError:
+            continue
+
+        rows.append((date, value))
+
+    rows.sort(key=lambda item: item[0])
     return rows
 
 
@@ -340,11 +390,12 @@ def build_ex_tsmc_series(
 def main() -> int:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    for output_name, series_id in LEGACY_DATA_IDS.items():
-        existing_path = DATA_DIR / f"{output_name}.csv"
-        rows = read_csv_series(existing_path) if existing_path.exists() else read_legacy_series(series_id)
-        write_series(output_name, rows)
-        print(f"Wrote {output_name}.csv with {len(rows)} rows")
+    taiex_existing_path = DATA_DIR / "taiex.csv"
+    taiex_base_rows = read_csv_series(taiex_existing_path) if taiex_existing_path.exists() else read_legacy_series(LEGACY_DATA_IDS["taiex"])
+    taiex_latest_rows = fetch_taiex_open_data()
+    taiex_rows = merge_series(taiex_base_rows, taiex_latest_rows)
+    write_series("taiex", taiex_rows)
+    print(f"Wrote taiex.csv with {len(taiex_rows)} rows; refreshed {len(taiex_latest_rows)} recent TWSE rows")
 
     yahoo_cache: dict[str, list[dict[str, float | str]]] = {}
     for output_name, symbol in YAHOO_SERIES.items():
