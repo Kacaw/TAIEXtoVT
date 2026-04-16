@@ -749,6 +749,21 @@ const ratioMatrixBenchmarkLabels = {
   ewh: "香港"
 };
 
+const ratioMatrixHighlightStyles = {
+  best: {
+    cell: "background:rgba(239,90,41,0.14);",
+    text: "color:#9a3412;"
+  },
+  worst: {
+    cell: "background:rgba(24,79,151,0.12);",
+    text: "color:#184f97;"
+  },
+  neutral: {
+    cell: "",
+    text: "color:#12202c;"
+  }
+};
+
 function buildRatioMatrixSection(taiwanKey) {
   const taiwanContext = getTaiwanSeriesContext(taiwanKey);
   const comparisonMap = {};
@@ -758,6 +773,27 @@ function buildRatioMatrixSection(taiwanKey) {
     const comparisons = buildAdministrationComparisons(benchmarkContext);
     comparisonMap[benchmarkKey] = Object.fromEntries(comparisons.map((period) => [period.key, period.relativeRatio]));
   });
+
+  const benchmarkExtremes = Object.fromEntries(
+    ratioMatrixBenchmarkOrder.map((benchmarkKey) => {
+      const values = ratioMatrixRowOrder
+        .map((row) => comparisonMap[benchmarkKey]?.[row.key])
+        .filter((value) => Number.isFinite(value));
+
+      return [
+        benchmarkKey,
+        values.length > 1
+          ? {
+              max: Math.max(...values),
+              min: Math.min(...values)
+            }
+          : {
+              max: null,
+              min: null
+            }
+      ];
+    })
+  );
 
   const headerCells = ratioMatrixBenchmarkOrder
     .map((benchmarkKey) => {
@@ -774,7 +810,18 @@ function buildRatioMatrixSection(taiwanKey) {
           ${ratioMatrixBenchmarkOrder
             .map((benchmarkKey) => {
               const ratio = comparisonMap[benchmarkKey]?.[row.key];
-              return `<td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 text-center text-base font-extrabold text-ink">${Number.isFinite(ratio) ? `${ratio.toFixed(2)}x` : "—"}</td>`;
+              const extremes = benchmarkExtremes[benchmarkKey];
+              const hasDistinctExtremes = Number.isFinite(extremes?.max) && Number.isFinite(extremes?.min) && extremes.max !== extremes.min;
+              const highlightKey =
+                Number.isFinite(ratio) && hasDistinctExtremes
+                  ? ratio === extremes.max
+                    ? "best"
+                    : ratio === extremes.min
+                      ? "worst"
+                      : "neutral"
+                  : "neutral";
+              const style = ratioMatrixHighlightStyles[highlightKey];
+              return `<td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 text-center text-base font-extrabold" style="${style.cell}${style.text}">${Number.isFinite(ratio) ? `${ratio.toFixed(2)}x` : "—"}</td>`;
             })
             .join("")}
         </tr>
@@ -875,7 +922,7 @@ function updateSummary(context, series, baselineKey, resolution) {
   metrics.disclaimerBenchmarkCopy.textContent = [taiwanContext.disclaimer, context.disclaimerCopy].filter(Boolean).join(" ");
   metrics.sourceLinks.innerHTML = buildSourceLinksHtml(context);
   metrics.ratioTableCaption.textContent = "分成兩個台股版本區塊；縱向是任期，橫向是市場，格子只顯示相對倍率。";
-  metrics.ratioTableHint.textContent = "表格固定顯示全部版本與全部市場，`—` 代表該任期無共同可比資料。";
+  metrics.ratioTableHint.textContent = "每個市場欄位內，最佳任期以暖色標示，最差任期以冷色標示；`—` 代表該任期無共同可比資料。";
   metrics.ratioMatrixContainer.innerHTML = buildAllRatioMatrixSections();
 
   metrics.administrationGrid.className = [
