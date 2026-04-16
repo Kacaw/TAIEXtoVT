@@ -321,10 +321,10 @@
           <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Ratio Overview</p>
           <h2 class="mt-2 text-2xl font-extrabold text-ink">相對倍率總覽</h2>
           <p class="mt-2 text-sm leading-6 text-slate-600" id="ratioTableCaption">
-            分成兩個台股版本區塊；縱向是任期，橫向是市場，格子只顯示相對倍率。
+            相對倍率代表「台股在該任期的累積倍率 ÷ 同任期該市場的累積倍率」，可直接視為台股相對該市場的強弱；大於 1 代表台股較強，小於 1 代表相對落後。
           </p>
         </div>
-        <p class="text-xs leading-5 text-slate-500" id="ratioTableHint">表格不跟上方選單聯動；它會固定顯示全部版本與全部市場，`—` 代表該任期無共同可比資料。</p>
+        <p class="text-xs leading-5 text-slate-500" id="ratioTableHint">分成兩個台股版本區塊；縱向是任期，橫向是市場。每個市場欄位內，最佳任期以暖色標示，最差任期以冷色標示；`—` 代表該任期無共同可比資料。</p>
       </div>
 
       <div class="mt-4 grid gap-4 xl:grid-cols-2" id="ratioMatrixContainer">
@@ -334,7 +334,7 @@
       </div>
     </section>
   </main>
-  <script src="app.js"></script>
+  <script src="app.js?v=20260416-3"></script>
 </body>
 </html>
 
