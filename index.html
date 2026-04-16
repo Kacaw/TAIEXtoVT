@@ -321,31 +321,16 @@
           <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Ratio Overview</p>
           <h2 class="mt-2 text-2xl font-extrabold text-ink">相對倍率總覽</h2>
           <p class="mt-2 text-sm leading-6 text-slate-600" id="ratioTableCaption">
-            一次列出所有台股版本、所有 benchmark 與所有任期的倍率，方便直接橫向比較差異。
+            分成兩個台股版本區塊；縱向是任期，橫向是市場，格子只顯示相對倍率。
           </p>
         </div>
-        <p class="text-xs leading-5 text-slate-500" id="ratioTableHint">表格不跟上方選單聯動；它會固定顯示全部版本與全部市場。</p>
+        <p class="text-xs leading-5 text-slate-500" id="ratioTableHint">表格不跟上方選單聯動；它會固定顯示全部版本與全部市場，`—` 代表該任期無共同可比資料。</p>
       </div>
 
-      <div class="mt-4 overflow-x-auto rounded-[22px] border border-slate-900/10 bg-white/88">
-        <table class="min-w-full border-separate border-spacing-0 text-sm" id="ratioTable">
-          <thead class="bg-slate-50/90">
-            <tr class="text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">台股版本</th>
-              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">比較市場</th>
-              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">任期</th>
-              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">期間</th>
-              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">台股倍率</th>
-              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">Benchmark 倍率</th>
-              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">相對倍率</th>
-            </tr>
-          </thead>
-          <tbody id="ratioTableBody">
-            <tr>
-              <td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">載入中...</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="mt-4 grid gap-4 xl:grid-cols-2" id="ratioMatrixContainer">
+        <div class="rounded-[22px] border border-slate-900/10 bg-white/88 px-4 py-6 text-center text-sm text-slate-500">
+          載入中...
+        </div>
       </div>
     </section>
   </main>

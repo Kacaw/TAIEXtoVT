@@ -459,7 +459,7 @@ const metrics = {
   sourceLinks: document.getElementById("sourceLinks"),
   ratioTableCaption: document.getElementById("ratioTableCaption"),
   ratioTableHint: document.getElementById("ratioTableHint"),
-  ratioTableBody: document.getElementById("ratioTableBody")
+  ratioMatrixContainer: document.getElementById("ratioMatrixContainer")
 };
 
 const state = {
@@ -731,42 +731,78 @@ function buildSourceLinksHtml(context) {
     .join(" · ");
 }
 
-function buildAllRatioTableRows() {
-  const taiwanKeys = Object.keys(taiwanSeriesConfigs);
-  const benchmarkKeys = Object.keys(benchmarkConfigs);
-  const rows = [];
+const ratioMatrixRowOrder = [
+  { key: "chen", label: "陳水扁（可得資料起）" },
+  { key: "ma", label: "馬英九" },
+  { key: "tsai", label: "蔡英文" },
+  { key: "lai", label: "賴清德" }
+];
 
-  taiwanKeys.forEach((taiwanKey) => {
-    const taiwanContext = getTaiwanSeriesContext(taiwanKey);
+const ratioMatrixBenchmarkOrder = ["vt", "vti", "ewj", "ewy", "ews", "ewh"];
 
-    benchmarkKeys.forEach((benchmarkKey) => {
-      const benchmarkContext = getBenchmarkContext(benchmarkKey, taiwanContext);
-      const comparisons = buildAdministrationComparisons(benchmarkContext);
+function buildRatioMatrixSection(taiwanKey) {
+  const taiwanContext = getTaiwanSeriesContext(taiwanKey);
+  const comparisonMap = {};
 
-      comparisons.forEach((period) => {
-        rows.push({
-          taiwanContext,
-          benchmarkContext,
-          period
-        });
-      });
-    });
+  ratioMatrixBenchmarkOrder.forEach((benchmarkKey) => {
+    const benchmarkContext = getBenchmarkContext(benchmarkKey, taiwanContext);
+    const comparisons = buildAdministrationComparisons(benchmarkContext);
+    comparisonMap[benchmarkKey] = Object.fromEntries(comparisons.map((period) => [period.key, period.relativeRatio]));
   });
 
-  return rows
+  const headerCells = ratioMatrixBenchmarkOrder
+    .map((benchmarkKey) => {
+      const benchmarkContext = benchmarkConfigs[benchmarkKey];
+      return `<th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3 text-center" style="color:${benchmarkContext.color}">${benchmarkContext.shortName}</th>`;
+    })
+    .join("");
+
+  const bodyRows = ratioMatrixRowOrder
     .map(
-      ({ taiwanContext, benchmarkContext, period }) => `
+      (row) => `
         <tr>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-bold" style="color:${taiwanContext.color}">${taiwanContext.shortName}</td>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-bold" style="color:${benchmarkContext.color}">${benchmarkContext.shortName}</td>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top text-slate-900">${period.displayLabel}</td>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top text-slate-600">${formatDate(period.startTs)} → ${formatDate(period.endTs)}</td>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-extrabold" style="color:${taiwanContext.color}">${period.taiexRatio.toFixed(2)}x</td>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top font-extrabold" style="color:${benchmarkContext.color}">${period.benchmarkRatio.toFixed(2)}x</td>
-          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 align-top text-lg font-extrabold text-ink">${period.relativeRatio.toFixed(2)}x</td>
+          <td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 font-bold text-slate-900">${row.label}</td>
+          ${ratioMatrixBenchmarkOrder
+            .map((benchmarkKey) => {
+              const ratio = comparisonMap[benchmarkKey]?.[row.key];
+              return `<td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 text-center text-base font-extrabold text-ink">${Number.isFinite(ratio) ? `${ratio.toFixed(2)}x` : "—"}</td>`;
+            })
+            .join("")}
         </tr>
       `
     )
+    .join("");
+
+  const note =
+    taiwanContext.key === "taiex_ex_tsmc"
+      ? "台股版本為 ex-TSMC 估算序列，倍率僅供歷史比較。"
+      : "台股版本為 TWSE 官方 TAIEX 報酬指數。";
+
+  return `
+    <section class="overflow-hidden rounded-[22px] border border-slate-900/10 bg-white/88">
+      <div class="border-b border-slate-900/10 px-5 py-4">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Taiwan Block</p>
+        <h3 class="mt-2 text-xl font-extrabold" style="color:${taiwanContext.color}">${taiwanContext.shortName}</h3>
+        <p class="mt-2 text-xs leading-5 text-slate-500">${note}</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full border-separate border-spacing-0 text-sm">
+          <thead class="bg-slate-50/90">
+            <tr class="text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3">任期</th>
+              ${headerCells}
+            </tr>
+          </thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function buildAllRatioMatrixSections() {
+  return Object.keys(taiwanSeriesConfigs)
+    .map((taiwanKey) => buildRatioMatrixSection(taiwanKey))
     .join("");
 }
 
@@ -829,9 +865,9 @@ function updateSummary(context, series, baselineKey, resolution) {
   metrics.sourceBenchmarkCopy.innerHTML = context.sourceBenchmarkCopy;
   metrics.disclaimerBenchmarkCopy.textContent = [taiwanContext.disclaimer, context.disclaimerCopy].filter(Boolean).join(" ");
   metrics.sourceLinks.innerHTML = buildSourceLinksHtml(context);
-  metrics.ratioTableCaption.textContent = "一次列出所有台股版本、所有 benchmark 與所有任期的倍率，方便直接橫向比較差異。";
-  metrics.ratioTableHint.textContent = "表格固定顯示全部組合；ex-TSMC 為估算序列，相關倍率僅供歷史比較。";
-  metrics.ratioTableBody.innerHTML = buildAllRatioTableRows();
+  metrics.ratioTableCaption.textContent = "分成兩個台股版本區塊；縱向是任期，橫向是市場，格子只顯示相對倍率。";
+  metrics.ratioTableHint.textContent = "表格固定顯示全部版本與全部市場，`—` 代表該任期無共同可比資料。";
+  metrics.ratioMatrixContainer.innerHTML = buildAllRatioMatrixSections();
 
   metrics.administrationGrid.className = [
     "mt-4",
