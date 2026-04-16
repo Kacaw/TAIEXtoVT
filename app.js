@@ -751,18 +751,19 @@ const ratioMatrixBenchmarkLabels = {
 
 const ratioMatrixHighlightStyles = {
   best: {
-    cell: "background:rgba(239,90,41,0.14);",
-    text: "color:#9a3412;"
+    chip: "background:rgba(239,90,41,0.18); color:#9a3412; box-shadow:inset 0 0 0 1px rgba(239,90,41,0.18);"
   },
   worst: {
-    cell: "background:rgba(24,79,151,0.12);",
-    text: "color:#184f97;"
+    chip: "background:rgba(24,79,151,0.16); color:#184f97; box-shadow:inset 0 0 0 1px rgba(24,79,151,0.18);"
   },
   neutral: {
-    cell: "",
-    text: "color:#12202c;"
+    chip: "background:rgba(15,23,42,0.04); color:#12202c; box-shadow:inset 0 0 0 1px rgba(15,23,42,0.05);"
   }
 };
+
+function isApproxEqual(left, right, tolerance = 1e-9) {
+  return Math.abs(left - right) <= tolerance;
+}
 
 function buildRatioMatrixSection(taiwanKey) {
   const taiwanContext = getTaiwanSeriesContext(taiwanKey);
@@ -814,14 +815,20 @@ function buildRatioMatrixSection(taiwanKey) {
               const hasDistinctExtremes = Number.isFinite(extremes?.max) && Number.isFinite(extremes?.min) && extremes.max !== extremes.min;
               const highlightKey =
                 Number.isFinite(ratio) && hasDistinctExtremes
-                  ? ratio === extremes.max
+                  ? isApproxEqual(ratio, extremes.max)
                     ? "best"
-                    : ratio === extremes.min
+                    : isApproxEqual(ratio, extremes.min)
                       ? "worst"
                       : "neutral"
                   : "neutral";
               const style = ratioMatrixHighlightStyles[highlightKey];
-              return `<td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 text-center text-base font-extrabold" style="${style.cell}${style.text}">${Number.isFinite(ratio) ? `${ratio.toFixed(2)}x` : "—"}</td>`;
+              const label =
+                highlightKey === "best"
+                  ? "最高"
+                  : highlightKey === "worst"
+                    ? "最低"
+                    : "";
+              return `<td class="whitespace-nowrap border-b border-slate-900/10 px-4 py-4 text-center">${Number.isFinite(ratio) ? `<span class="inline-flex items-center justify-center rounded-full px-3 py-1 text-base font-extrabold" style="${style.chip}" title="${label ? `${ratioMatrixBenchmarkLabels[benchmarkKey]} 在 ${row.label} 為${label}相對倍率` : `${ratioMatrixBenchmarkLabels[benchmarkKey]} 相對倍率`}">${ratio.toFixed(2)}x</span>` : "—"}</td>`;
             })
             .join("")}
         </tr>
@@ -921,8 +928,8 @@ function updateSummary(context, series, baselineKey, resolution) {
   metrics.sourceBenchmarkCopy.innerHTML = context.sourceBenchmarkCopy;
   metrics.disclaimerBenchmarkCopy.textContent = [taiwanContext.disclaimer, context.disclaimerCopy].filter(Boolean).join(" ");
   metrics.sourceLinks.innerHTML = buildSourceLinksHtml(context);
-  metrics.ratioTableCaption.textContent = "分成兩個台股版本區塊；縱向是任期，橫向是市場，格子只顯示相對倍率。";
-  metrics.ratioTableHint.textContent = "每個市場欄位內，最佳任期以暖色標示，最差任期以冷色標示；`—` 代表該任期無共同可比資料。";
+  metrics.ratioTableCaption.textContent = "相對倍率代表「台股在該任期的累積倍率 ÷ 同任期該市場的累積倍率」，可直接視為台股相對該市場的強弱；大於 1 代表台股較強，小於 1 代表相對落後。";
+  metrics.ratioTableHint.textContent = "分成兩個台股版本區塊；縱向是任期，橫向是市場。每個市場欄位內，最佳任期以暖色標示，最差任期以冷色標示；`—` 代表該任期無共同可比資料。";
   metrics.ratioMatrixContainer.innerHTML = buildAllRatioMatrixSections();
 
   metrics.administrationGrid.className = [
