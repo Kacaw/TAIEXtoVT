@@ -222,7 +222,7 @@
         </div>
       </div>
 
-      <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="administrationGrid"></div>
+      <div class="mt-4 grid gap-4 md:grid-cols-2" id="administrationGrid"></div>
 
       <div class="mt-6 flex flex-col gap-4 border-b border-slate-900/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -17244,6 +17244,7 @@ function updateSummary(context, series, baselineKey, resolution) {
   const latest = series[series.length - 1];
   const baselinePeriod = context.administrationMap[baselineKey];
   const administrationComparisons = buildAdministrationComparisons(context);
+  metrics.administrationGrid.className = `mt-4 grid gap-4 md:grid-cols-2 ${administrationComparisons.length >= 4 ? "xl:grid-cols-4" : "xl:grid-cols-3"}`;
 
   metrics.heroDescription.textContent = context.heroText;
   metrics.methodHint.textContent = context.methodHint;
