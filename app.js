@@ -478,7 +478,8 @@ const metrics = {
   ratioTableCaption: document.getElementById("ratioTableCaption"),
   ratioTableHint: document.getElementById("ratioTableHint"),
   ratioMatrixContainer: document.getElementById("ratioMatrixContainer"),
-  benchmarkControlHint: document.getElementById("benchmarkControlHint")
+  benchmarkControlHint: document.getElementById("benchmarkControlHint"),
+  ratioAnalysisContainer: document.getElementById("ratioAnalysisContainer")
 };
 
 const state = {
@@ -784,6 +785,137 @@ function isApproxEqual(left, right, tolerance = 1e-9) {
   return Math.abs(left - right) <= tolerance;
 }
 
+function average(values) {
+  if (!values.length) return Number.NaN;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function formatRatioValue(value) {
+  return `${value.toFixed(2)}x`;
+}
+
+function buildAllComparisonData() {
+  return Object.fromEntries(
+    Object.keys(taiwanSeriesConfigs).map((taiwanKey) => {
+      const taiwanContext = getTaiwanSeriesContext(taiwanKey);
+      const benchmarkMap = Object.fromEntries(
+        ratioMatrixBenchmarkOrder.map((benchmarkKey) => {
+          const benchmarkContext = getBenchmarkContext(benchmarkKey, taiwanContext);
+          return [benchmarkKey, buildAdministrationComparisons(benchmarkContext)];
+        })
+      );
+      return [taiwanKey, benchmarkMap];
+    })
+  );
+}
+
+function buildRatioAnalysisSections() {
+  const comparisonData = buildAllComparisonData();
+  const periodKeys = ratioMatrixRowOrder.map((row) => row.key);
+
+  const officialSummaries = periodKeys
+    .map((periodKey) => {
+      const ratios = ratioMatrixBenchmarkOrder
+        .map((benchmarkKey) => comparisonData.taiex?.[benchmarkKey]?.find((period) => period.key === periodKey))
+        .filter((period) => period && Number.isFinite(period.relativeRatio));
+
+      return {
+        key: periodKey,
+        label: ratioMatrixRowOrder.find((row) => row.key === periodKey)?.label || periodKey,
+        average: average(ratios.map((period) => period.relativeRatio)),
+        count: ratios.length,
+        wins: ratios.filter((period) => period.relativeRatio > 1).length
+      };
+    })
+    .filter((summary) => Number.isFinite(summary.average));
+
+  const strongestOfficial = officialSummaries.reduce((best, current) => (current.average > best.average ? current : best), officialSummaries[0]);
+
+  const tsmcLiftSummaries = periodKeys
+    .map((periodKey) => {
+      const officialRatios = Object.fromEntries(
+        ratioMatrixBenchmarkOrder
+          .map((benchmarkKey) => [benchmarkKey, comparisonData.taiex?.[benchmarkKey]?.find((period) => period.key === periodKey)?.relativeRatio])
+          .filter(([, ratio]) => Number.isFinite(ratio))
+      );
+      const exRatios = Object.fromEntries(
+        ratioMatrixBenchmarkOrder
+          .map((benchmarkKey) => [benchmarkKey, comparisonData.taiex_ex_tsmc?.[benchmarkKey]?.find((period) => period.key === periodKey)?.relativeRatio])
+          .filter(([, ratio]) => Number.isFinite(ratio))
+      );
+
+      const sharedRatios = ratioMatrixBenchmarkOrder
+        .filter((benchmarkKey) => Number.isFinite(officialRatios[benchmarkKey]) && Number.isFinite(exRatios[benchmarkKey]))
+        .map((benchmarkKey) => ({
+          benchmarkKey,
+          official: officialRatios[benchmarkKey],
+          ex: exRatios[benchmarkKey]
+        }));
+
+      return {
+        key: periodKey,
+        label: ratioMatrixRowOrder.find((row) => row.key === periodKey)?.label || periodKey,
+        officialAverage: average(sharedRatios.map((item) => item.official)),
+        exAverage: average(sharedRatios.map((item) => item.ex)),
+        gap: average(sharedRatios.map((item) => item.official)) - average(sharedRatios.map((item) => item.ex))
+      };
+    })
+    .filter((summary) => Number.isFinite(summary.gap));
+
+  const largestTsmcLift = tsmcLiftSummaries.reduce((best, current) => (current.gap > best.gap ? current : best), tsmcLiftSummaries[0]);
+
+  const latestOfficialRows = ratioMatrixBenchmarkOrder
+    .map((benchmarkKey) => ({
+      benchmarkKey,
+      label: ratioMatrixBenchmarkLabels[benchmarkKey],
+      ratio: comparisonData.taiex?.[benchmarkKey]?.find((period) => period.key === "lai")?.relativeRatio
+    }))
+    .filter((item) => Number.isFinite(item.ratio));
+  const latestExRows = ratioMatrixBenchmarkOrder
+    .map((benchmarkKey) => ({
+      benchmarkKey,
+      label: ratioMatrixBenchmarkLabels[benchmarkKey],
+      ratio: comparisonData.taiex_ex_tsmc?.[benchmarkKey]?.find((period) => period.key === "lai")?.relativeRatio
+    }))
+    .filter((item) => Number.isFinite(item.ratio));
+
+  const officialLaggingMarkets = latestOfficialRows.filter((item) => item.ratio < 1).map((item) => item.label);
+  const exLaggingMarkets = latestExRows.filter((item) => item.ratio < 1).map((item) => item.label);
+
+  const cards = [
+    {
+      eyebrow: "Strongest Term",
+      title: strongestOfficial.label,
+      tone: "color:#ef5a29;",
+      body: `官方 TAIEX 以平均相對倍率 ${formatRatioValue(strongestOfficial.average)} 最強，對 ${strongestOfficial.wins}/${strongestOfficial.count} 個市場勝出。這表示該任期的台股超額報酬不是只贏單一基準，而是接近全面領先。`
+    },
+    {
+      eyebrow: "TSMC Effect",
+      title: `${largestTsmcLift.label} 的台積電放大效果最明顯`,
+      tone: "color:#9a3412;",
+      body: `若改看 ex-TSMC，該任期平均相對倍率會由 ${formatRatioValue(largestTsmcLift.officialAverage)} 降到 ${formatRatioValue(largestTsmcLift.exAverage)}，縮水 ${formatRatioValue(largestTsmcLift.gap)}。這代表台積電對台股相對優勢的放大，在這段最明顯。`
+    },
+    {
+      eyebrow: "Current Structure",
+      title: "賴清德目前仍強，但廣度弱於官方指數表面",
+      tone: "color:#194f98;",
+      body: `官方 TAIEX 目前對 ${latestOfficialRows.filter((item) => item.ratio > 1).length}/${latestOfficialRows.length} 個市場占優${officialLaggingMarkets.length ? `，僅落後 ${officialLaggingMarkets.join("、")}` : ""}；若扣除台積電，則只剩 ${latestExRows.filter((item) => item.ratio > 1).length}/${latestExRows.length} 個市場占優${exLaggingMarkets.length ? `，並落後 ${exLaggingMarkets.join("、")}` : ""}。這代表最新一段的強勢更集中在台積電與半導體鏈。`
+    }
+  ];
+
+  return cards
+    .map(
+      (card) => `
+        <article class="rounded-[22px] border border-slate-900/10 bg-white/88 px-5 py-5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">${card.eyebrow}</p>
+          <h4 class="mt-2 text-lg font-extrabold leading-7" style="${card.tone}">${card.title}</h4>
+          <p class="mt-3 text-sm leading-7 text-slate-700">${card.body}</p>
+        </article>
+      `
+    )
+    .join("");
+}
+
 function buildRatioMatrixSection(taiwanKey) {
   const taiwanContext = getTaiwanSeriesContext(taiwanKey);
   const comparisonMap = {};
@@ -957,6 +1089,7 @@ function updateSummary(context, series, baselineKey, resolution) {
   metrics.ratioTableCaption.textContent = "相對倍率代表「台股在該任期的累積倍率 ÷ 同任期該市場的累積倍率」，可直接視為台股相對該市場的強弱；大於 1 代表台股較強，小於 1 代表相對落後。";
   metrics.ratioTableHint.textContent = "分成兩個台股版本區塊；縱向是任期，橫向是市場。每個市場欄位內，最佳任期以暖色標示，最差任期以冷色標示；`—` 代表該任期無共同可比資料。";
   metrics.ratioMatrixContainer.innerHTML = buildAllRatioMatrixSections();
+  metrics.ratioAnalysisContainer.innerHTML = buildRatioAnalysisSections();
 
   metrics.administrationGrid.className = [
     "mt-4",
