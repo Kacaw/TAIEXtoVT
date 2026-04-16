@@ -732,13 +732,22 @@ function buildSourceLinksHtml(context) {
 }
 
 const ratioMatrixRowOrder = [
-  { key: "chen", label: "陳水扁（可得資料起）" },
+  { key: "chen", label: "陳水扁" },
   { key: "ma", label: "馬英九" },
   { key: "tsai", label: "蔡英文" },
   { key: "lai", label: "賴清德" }
 ];
 
 const ratioMatrixBenchmarkOrder = ["vt", "vti", "ewj", "ewy", "ews", "ewh"];
+
+const ratioMatrixBenchmarkLabels = {
+  vt: "全球",
+  vti: "美國",
+  ewj: "日本",
+  ewy: "韓國",
+  ews: "新加坡",
+  ewh: "香港"
+};
 
 function buildRatioMatrixSection(taiwanKey) {
   const taiwanContext = getTaiwanSeriesContext(taiwanKey);
@@ -753,7 +762,7 @@ function buildRatioMatrixSection(taiwanKey) {
   const headerCells = ratioMatrixBenchmarkOrder
     .map((benchmarkKey) => {
       const benchmarkContext = benchmarkConfigs[benchmarkKey];
-      return `<th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3 text-center" style="color:${benchmarkContext.color}">${benchmarkContext.shortName}</th>`;
+      return `<th class="whitespace-nowrap border-b border-slate-900/10 px-4 py-3 text-center" style="color:${benchmarkContext.color}">${ratioMatrixBenchmarkLabels[benchmarkKey]}</th>`;
     })
     .join("");
 
