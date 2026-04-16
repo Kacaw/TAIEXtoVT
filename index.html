@@ -174,7 +174,15 @@
     </header>
 
     <section class="panel mt-8 rounded-[32px] px-4 pb-4 pt-4 sm:px-6 sm:pb-6 lg:mt-10 lg:px-8 lg:pb-8 lg:pt-6">
-      <div class="grid gap-4 border-b border-slate-900/10 pb-5 xl:grid-cols-3">
+      <div class="grid gap-4 border-b border-slate-900/10 pb-5 xl:grid-cols-4">
+        <label class="block">
+          <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">台股版本</span>
+          <select id="taiwanSeries" class="field">
+            <option value="taiex" selected>TAIEX TR（官方）</option>
+            <option value="taiex_ex_tsmc">TAIEX ex-TSMC（估算）</option>
+          </select>
+        </label>
+
         <label class="block">
           <span class="mb-2 block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">比較市場</span>
           <select id="benchmark" class="field">
@@ -211,9 +219,9 @@
 
       <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-[24px] border border-slate-900/10 bg-white/85 p-4">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">最新 TAIEX TR</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500" id="taiwanMetricLabel">最新 TAIEX TR</p>
           <p class="mt-2 text-3xl font-extrabold text-taiex" id="taiexMetric">83,768.84</p>
-          <p class="mt-1 text-xs text-slate-600">TWSE 官方報酬指數，含股息再投入</p>
+          <p class="mt-1 text-xs text-slate-600" id="taiwanMetricNote">TWSE 官方報酬指數，含股息再投入</p>
         </div>
         <div class="rounded-[24px] border border-slate-900/10 bg-white/85 p-4">
           <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500" id="benchmarkMetricLabel">最新 Benchmark Adj Close</p>
@@ -244,7 +252,7 @@
         <div class="flex flex-wrap items-center gap-4 text-sm font-semibold">
           <span class="inline-flex items-center gap-2 text-slate-700">
             <span class="h-3 w-8 rounded-full bg-gradient-to-r from-[#ff8c4c] to-[#ef5a29]"></span>
-            TAIEX Total Return
+            <span id="taiwanLegendLabel">TAIEX Total Return</span>
           </span>
           <span class="inline-flex items-center gap-2 text-slate-700" id="benchmarkLegend">
             <span class="h-3 w-8 rounded-full bg-gradient-to-r from-[#6ea5ea] to-[#194f98]"></span>
@@ -269,8 +277,8 @@
           <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">資料來源</p>
           <div class="mt-3 space-y-3 text-sm leading-6 text-slate-700">
             <p>
-              <span class="font-bold text-slate-900">TAIEX：</span>
-              台灣證券交易所「發行量加權股價報酬指數」開放資料，採官方日資料。
+              <span class="font-bold text-slate-900" id="sourceTaiwanLabel">TAIEX：</span>
+              <span id="sourceTaiwanCopy">台灣證券交易所「發行量加權股價報酬指數」開放資料，採官方日資料。</span>
             </p>
             <p>
               <span class="font-bold text-slate-900" id="sourceBenchmarkLabel">Benchmark：</span>

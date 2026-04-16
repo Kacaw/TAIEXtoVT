@@ -1,5 +1,7 @@
 const DATA_FILES = {
   taiex: "data/taiex.csv",
+  taiex_ex_tsmc: "data/taiex_ex_tsmc_estimated.csv",
+  tsmc_weight_estimate: "data/tsmc_weight_estimate.csv",
   vt: "data/vt.csv",
   vti: "data/vti.csv",
   ewj: "data/ewj.csv",
@@ -117,6 +119,59 @@ function createGradient(context, chartArea, stops) {
   stops.forEach((stop) => gradient.addColorStop(stop.offset, stop.color));
   return gradient;
 }
+
+const taiwanSeriesConfigs = {
+  taiex: {
+    key: "taiex",
+    seriesKey: "taiex",
+    shortName: "TAIEX",
+    datasetLabel: "TAIEX Total Return Index",
+    metricLabel: "最新 TAIEX TR",
+    metricNote: "TWSE 官方報酬指數，含股息再投入",
+    legendLabel: "TAIEX Total Return",
+    sourceLabel: "TAIEX：",
+    sourceCopy: "台灣證券交易所「發行量加權股價報酬指數」開放資料，採官方日資料。",
+    methodLabel: "台股版本使用 TWSE 官方 TAIEX 發行量加權股價報酬指數。",
+    chartNarrativeNote: "TAIEX 使用 TWSE 官方含息報酬指數。",
+    proxyLabel: "TAIEX = 官方報酬指數",
+    disclaimer: "",
+    links: [],
+    color: "#ef5a29",
+    gradientStops: [
+      { offset: 0, color: "#ff8c4c" },
+      { offset: 0.45, color: "#ef5a29" },
+      { offset: 1, color: "#c93a0d" }
+    ]
+  },
+  taiex_ex_tsmc: {
+    key: "taiex_ex_tsmc",
+    seriesKey: "taiex_ex_tsmc",
+    shortName: "TAIEX ex-TSMC（估算）",
+    datasetLabel: "TAIEX ex-TSMC Estimated",
+    metricLabel: "最新 ex-TSMC 估算值",
+    metricNote: "以月頻台積電權重估算反推之台股序列，非官方指數",
+    legendLabel: "TAIEX ex-TSMC（估算）",
+    sourceLabel: "台股估算序列：",
+    sourceCopy:
+      "以 TWSE 官方 TAIEX 報酬指數、2330.TW Adjusted Close、Yahoo split events 與 FSC 上市市值月資料反推之估算序列。",
+    methodLabel:
+      "台股版本改用 TAIEX ex-TSMC 估算值；台積電權重以『當前股本 + Yahoo split events 回推股數 + FSC 上市市值月資料』估算，並在月觀測點間 piecewise hold。",
+    chartNarrativeNote:
+      "台股序列改為 ex-TSMC 估算值；台積電權重採月頻估算並於日頻報酬計算中沿用前一觀測值。",
+    proxyLabel: "台股 = ex-TSMC 估算序列",
+    disclaimer: "台股 ex-TSMC 為估算序列，不等同 TWSE 官方指數；權重採月頻估算，僅供歷史比較。",
+    links: [
+      { label: "FSC 股票發行概況", url: "https://data.gov.tw/dataset/103533" },
+      { label: "研究說明", url: "https://github.com/Kacaw/TAIEXtoVT/blob/codex/ex-tsmc-estimate/research/ex-tsmc-estimate.md" }
+    ],
+    color: "#d14316",
+    gradientStops: [
+      { offset: 0, color: "#fdba74" },
+      { offset: 0.45, color: "#d14316" },
+      { offset: 1, color: "#9a3412" }
+    ]
+  }
+};
 
 const threeAdministrationSet = [
   {
@@ -370,6 +425,7 @@ const benchmarkConfigs = {
 };
 
 const controls = {
+  taiwanSeries: document.getElementById("taiwanSeries"),
   benchmark: document.getElementById("benchmark"),
   baseline: document.getElementById("baseline"),
   resolution: document.getElementById("resolution")
@@ -380,7 +436,9 @@ const metrics = {
   methodHint: document.getElementById("methodHint"),
   modeBadge: document.getElementById("modeBadge"),
   basisLabel: document.getElementById("basisLabel"),
+  taiwanMetricLabel: document.getElementById("taiwanMetricLabel"),
   taiexMetric: document.getElementById("taiexMetric"),
+  taiwanMetricNote: document.getElementById("taiwanMetricNote"),
   benchmarkMetricLabel: document.getElementById("benchmarkMetricLabel"),
   benchmarkMetric: document.getElementById("benchmarkMetric"),
   benchmarkMetricNote: document.getElementById("benchmarkMetricNote"),
@@ -389,9 +447,12 @@ const metrics = {
   officialWindow: document.getElementById("officialWindow"),
   periodSummary: document.getElementById("periodSummary"),
   chartNarrative: document.getElementById("chartNarrative"),
+  taiwanLegendLabel: document.getElementById("taiwanLegendLabel"),
   benchmarkLegend: document.getElementById("benchmarkLegend"),
   methodDetail: document.getElementById("methodDetail"),
   rangeDetail: document.getElementById("rangeDetail"),
+  sourceTaiwanLabel: document.getElementById("sourceTaiwanLabel"),
+  sourceTaiwanCopy: document.getElementById("sourceTaiwanCopy"),
   sourceBenchmarkLabel: document.getElementById("sourceBenchmarkLabel"),
   sourceBenchmarkCopy: document.getElementById("sourceBenchmarkCopy"),
   disclaimerBenchmarkCopy: document.getElementById("disclaimerBenchmarkCopy"),
@@ -416,10 +477,23 @@ function showError(message) {
   metrics.periodSummary.textContent = "請透過 GitHub Pages 或本機靜態伺服器開啟本站。";
 }
 
-function getBenchmarkContext(benchmarkKey) {
+function getTaiwanSeriesContext(taiwanSeriesKey) {
+  const config = taiwanSeriesConfigs[taiwanSeriesKey];
+  const series = state.rawSeries[config.seriesKey];
+  const latestWeightSeries = state.rawSeries.tsmc_weight_estimate || [];
+  const latestWeight = latestWeightSeries.length ? latestWeightSeries[latestWeightSeries.length - 1].value : null;
+
+  return {
+    ...config,
+    series,
+    latestWeight
+  };
+}
+
+function getBenchmarkContext(benchmarkKey, taiwanContext) {
   const config = benchmarkConfigs[benchmarkKey];
   const benchmarkSeries = state.rawSeries[config.seriesKey];
-  const taiexSeries = state.rawSeries.taiex;
+  const taiexSeries = taiwanContext.series;
   const startTs = Math.max(taiexSeries[0].ts, benchmarkSeries[0].ts);
   const endTs = Math.min(taiexSeries[taiexSeries.length - 1].ts, benchmarkSeries[benchmarkSeries.length - 1].ts);
 
@@ -467,6 +541,7 @@ function getBenchmarkContext(benchmarkKey) {
 
   return {
     ...config,
+    taiwanContext,
     taiexSeries,
     benchmarkSeries,
     startTs,
@@ -641,6 +716,7 @@ function populateBaselineOptions(context) {
 function buildSourceLinksHtml(context) {
   const links = [
     { label: "TWSE 開放資料", url: "https://data.gov.tw/dataset/11871" },
+    ...(context.taiwanContext.links || []),
     ...context.links
   ];
 
@@ -657,29 +733,59 @@ function updateSummary(context, series, baselineKey, resolution) {
   const baselinePeriod = context.administrationMap[baselineKey];
   const comparisons = buildAdministrationComparisons(context);
   const cardCount = comparisons.length;
+  const taiwanContext = context.taiwanContext;
+  const modeLabel = taiwanContext.key === "taiex" ? "官方 TAIEX" : "ex-TSMC 估算";
+  const benchmarkWindowNote =
+    context.key === "vt"
+      ? "VT 模式自 2008.06.26 起，僅使用真實資料。"
+      : `${context.shortName} 模式可回溯至 2003.01.02，並納入陳水扁任期後段。`;
+  const benchmarkNarrative =
+    context.key === "vt"
+      ? "目前 benchmark 使用全球股市 ETF VT 的 Adjusted Close 作為含息可比序列，可觀察台灣與全球市場的相對強弱。"
+      : context.key === "vti"
+        ? "目前 benchmark 使用美國總市場 ETF VTI 的 Adjusted Close 作為含息可比序列，可觀察台灣與美國市場的相對強弱。"
+        : context.key === "ewj"
+          ? "目前 benchmark 使用日本股市 ETF EWJ 的 Adjusted Close 作為含息可比序列，可觀察台灣與日本市場的相對強弱。"
+          : context.key === "ewy"
+            ? "目前 benchmark 使用韓國股市 ETF EWY 的 Adjusted Close 作為含息可比序列，可觀察台灣與韓國市場的相對強弱。"
+            : context.key === "ews"
+              ? "目前 benchmark 使用新加坡股市 ETF EWS 的 Adjusted Close 作為含息可比序列，可觀察台灣與新加坡市場的相對強弱。"
+              : "目前 benchmark 使用香港股市 ETF EWH 的 Adjusted Close 作為含息可比序列，可觀察台灣與香港市場的相對強弱。";
 
-  metrics.heroDescription.textContent = context.heroText;
-  metrics.methodHint.textContent = context.methodHint;
-  metrics.modeBadge.textContent = `${context.controlLabel} / ${resolutionSettings[resolution].label}`;
+  metrics.heroDescription.textContent =
+    taiwanContext.key === "taiex_ex_tsmc"
+      ? `${context.heroText} 目前台股版本已切換為 ex-TSMC 估算序列。`
+      : context.heroText;
+  metrics.methodHint.textContent = `${taiwanContext.methodLabel} benchmark 端使用 ${context.shortName} Yahoo Finance Adjusted Close。${benchmarkWindowNote}`;
+  metrics.modeBadge.textContent = `${modeLabel} / ${context.controlLabel} / ${resolutionSettings[resolution].label}`;
   metrics.basisLabel.textContent = `基準點：${baselinePeriod.displayLabel} ${formatDate(baselinePeriod.startTs)} = 100`;
+  metrics.taiwanMetricLabel.textContent = taiwanContext.metricLabel;
   metrics.taiexMetric.textContent = formatValue(latest.rawTaiex, 2);
+  metrics.taiexMetric.style.color = taiwanContext.color;
+  metrics.taiwanMetricNote.textContent =
+    taiwanContext.latestWeight && taiwanContext.key === "taiex_ex_tsmc"
+      ? `${taiwanContext.metricNote}；最新月估權重約 ${(taiwanContext.latestWeight * 100).toFixed(1)}%。`
+      : taiwanContext.metricNote;
   metrics.benchmarkMetricLabel.textContent = context.metricLabel;
   metrics.benchmarkMetric.textContent = formatValue(latest.rawBenchmark, context.metricDigits);
   metrics.benchmarkMetric.style.color = context.color;
   metrics.benchmarkMetricNote.textContent = context.metricNote;
-  metrics.proxyNotice.textContent = context.proxyNotice;
+  metrics.proxyNotice.textContent = `${taiwanContext.proxyLabel}；${context.shortName} = 調整後收盤價。`;
   metrics.officialWindow.textContent = `本頁顯示範圍：${formatDate(context.startTs)} - ${formatDate(context.endTs)}。`;
   metrics.periodSummary.textContent = `可視區間：${context.administrations.map((period) => period.displayLabel).join("、")}。`;
-  metrics.chartNarrative.textContent = context.chartNarrative;
-  metrics.methodDetail.textContent = `倍率定義為「任期結束 ÷ 任期開始」；相對倍率為「TAIEX 任期倍率 ÷ ${context.shortName} 任期倍率」。`;
-  metrics.rangeDetail.textContent = context.rangeDetailTemplate(context);
+  metrics.chartNarrative.textContent = `全圖以真實日資料重新取樣。${taiwanContext.chartNarrativeNote} ${benchmarkNarrative}`;
+  metrics.taiwanLegendLabel.textContent = taiwanContext.legendLabel;
+  metrics.methodDetail.textContent = `倍率定義為「任期結束 ÷ 任期開始」；相對倍率為「${taiwanContext.shortName} 任期倍率 ÷ ${context.shortName} 任期倍率」。`;
+  metrics.rangeDetail.textContent = `${context.rangeDetailTemplate(context)}${taiwanContext.key === "taiex_ex_tsmc" ? " ex-TSMC 估算值自可得月頻權重起點開始計算。" : ""}`;
+  metrics.sourceTaiwanLabel.textContent = taiwanContext.sourceLabel;
+  metrics.sourceTaiwanCopy.textContent = taiwanContext.sourceCopy;
   metrics.benchmarkLegend.innerHTML = `
     <span class="h-3 w-8 rounded-full" style="background:${context.gradientCss}"></span>
     ${context.datasetLabel}
   `;
   metrics.sourceBenchmarkLabel.textContent = context.sourceBenchmarkLabel;
   metrics.sourceBenchmarkCopy.innerHTML = context.sourceBenchmarkCopy;
-  metrics.disclaimerBenchmarkCopy.textContent = context.disclaimerCopy;
+  metrics.disclaimerBenchmarkCopy.textContent = [taiwanContext.disclaimer, context.disclaimerCopy].filter(Boolean).join(" ");
   metrics.sourceLinks.innerHTML = buildSourceLinksHtml(context);
 
   metrics.administrationGrid.className = [
@@ -697,13 +803,13 @@ function updateSummary(context, series, baselineKey, resolution) {
           <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">${period.displayLabel}</p>
           <p class="mt-2 text-lg font-extrabold text-slate-900">${formatDate(period.startTs)} → ${formatDate(period.endTs)}</p>
           <div class="mt-3 space-y-1 text-xs leading-5 text-slate-600">
-            <p><span class="font-bold text-taiex">TAIEX</span>：${formatValue(period.taiexStart.value, 2)} → ${formatValue(period.taiexEnd.value, 2)}</p>
+            <p><span class="font-bold" style="color:${taiwanContext.color}">${taiwanContext.shortName}</span>：${formatValue(period.taiexStart.value, 2)} → ${formatValue(period.taiexEnd.value, 2)}</p>
             <p><span class="font-bold" style="color:${context.color}">${context.shortName}</span>：${formatValue(period.benchmarkStart.value, context.rawDigits)} → ${formatValue(period.benchmarkEnd.value, context.rawDigits)}</p>
           </div>
           <div class="mt-4 grid grid-cols-3 gap-2 text-center">
             <div class="rounded-2xl bg-white/80 px-2 py-3">
-              <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">TAIEX</p>
-              <p class="mt-2 text-2xl font-extrabold text-taiex">${period.taiexRatio.toFixed(2)}x</p>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">${taiwanContext.key === "taiex" ? "TAIEX" : "ex-TSMC"}</p>
+              <p class="mt-2 text-2xl font-extrabold" style="color:${taiwanContext.color}">${period.taiexRatio.toFixed(2)}x</p>
             </div>
             <div class="rounded-2xl bg-white/80 px-2 py-3">
               <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">${context.shortName}</p>
@@ -715,7 +821,7 @@ function updateSummary(context, series, baselineKey, resolution) {
             </div>
           </div>
           <p class="mt-3 text-xs leading-5 text-slate-500">
-            相對 = TAIEX 任期倍率 ÷ ${context.shortName} 任期倍率${period.isPartialStart && context.annotatePartialStart ? "；本期自 benchmark 可得資料起點開始。" : ""}
+            相對 = ${taiwanContext.shortName} 任期倍率 ÷ ${context.shortName} 任期倍率${period.isPartialStart && context.annotatePartialStart ? "；本期自 benchmark 可得資料起點開始。" : ""}
           </p>
         </article>
       `
@@ -726,9 +832,11 @@ function updateSummary(context, series, baselineKey, resolution) {
 function renderChart() {
   if (!state.rawSeries) return;
 
+  const taiwanSeriesKey = controls.taiwanSeries.value;
   const benchmarkKey = controls.benchmark.value;
   const resolution = controls.resolution.value;
-  const context = getBenchmarkContext(benchmarkKey);
+  const taiwanContext = getTaiwanSeriesContext(taiwanSeriesKey);
+  const context = getBenchmarkContext(benchmarkKey, taiwanContext);
 
   populateBaselineOptions(context);
 
@@ -754,7 +862,7 @@ function renderChart() {
     data: {
       datasets: [
         {
-          label: "TAIEX Total Return Index",
+          label: taiwanContext.datasetLabel,
           data: series.map((point) => ({
             x: point.ts,
             y: point.taiex,
@@ -765,17 +873,13 @@ function renderChart() {
           borderWidth: resolution === "daily" ? 2.0 : 3.5,
           borderColor(chartContext) {
             const area = chartContext.chart.chartArea;
-            if (!area) return "#ef5a29";
-            return createGradient(chartContext.chart.ctx, area, [
-              { offset: 0, color: "#ff8c4c" },
-              { offset: 0.45, color: "#ef5a29" },
-              { offset: 1, color: "#c93a0d" }
-            ]);
+            if (!area) return taiwanContext.color;
+            return createGradient(chartContext.chart.ctx, area, taiwanContext.gradientStops);
           },
           pointRadius: 0,
           pointHoverRadius: 4.5,
           pointHoverBackgroundColor: "#ffffff",
-          pointHoverBorderColor: "#ef5a29",
+          pointHoverBorderColor: taiwanContext.color,
           pointHoverBorderWidth: 3,
           tension: 0.22,
           fill: false
@@ -852,11 +956,11 @@ function renderChart() {
             },
             footer(items) {
               if (items.length < 2) return "";
-              const taiexPoint = items.find((item) => item.dataset.label === "TAIEX Total Return Index");
+              const taiexPoint = items.find((item) => item.dataset.label === taiwanContext.datasetLabel);
               const benchmarkPoint = items.find((item) => item.dataset.label === context.datasetLabel);
               if (!taiexPoint || !benchmarkPoint) return "";
               const ratio = taiexPoint.parsed.y / benchmarkPoint.parsed.y;
-              return `相對倍率：${ratio.toFixed(2)}x（TAIEX / ${context.shortName}）`;
+              return `相對倍率：${ratio.toFixed(2)}x（${taiwanContext.shortName} / ${context.shortName}）`;
             }
           }
         }
@@ -932,6 +1036,7 @@ async function initializeApp() {
     );
 
     state.rawSeries = Object.fromEntries(loaded);
+    controls.taiwanSeries.addEventListener("change", renderChart);
     controls.benchmark.addEventListener("change", renderChart);
     controls.baseline.addEventListener("change", renderChart);
     controls.resolution.addEventListener("change", renderChart);
