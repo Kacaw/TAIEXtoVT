@@ -49,6 +49,26 @@ def month_end_date(year: int, month: int) -> str:
     return (next_month.replace(day=1) - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
+def add_months(value: datetime, months: int) -> datetime:
+    month_index = value.month - 1 + months
+    year = value.year + month_index // 12
+    month = month_index % 12 + 1
+    return value.replace(year=year, month=month, day=1)
+
+
+def month_starts_between(start_date: str, end_date: str) -> list[str]:
+    start = datetime.strptime(start_date, "%Y-%m-%d").replace(day=1)
+    end = datetime.strptime(end_date, "%Y-%m-%d").replace(day=1)
+    months = []
+
+    cursor = start
+    while cursor <= end:
+        months.append(cursor.strftime("%Y%m%d"))
+        cursor = add_months(cursor, 1)
+
+    return months
+
+
 def quarter_end_date(year: int, quarter: int) -> str:
     mapping = {
         1: "03-31",
@@ -224,9 +244,10 @@ def fetch_yahoo_chart(symbol: str) -> list[dict[str, float | str]]:
     return rows
 
 
-def fetch_taiex_open_data() -> list[tuple[str, float]]:
+def fetch_taiex_open_data(date_hint: str | None = None) -> list[tuple[str, float]]:
     rows: list[tuple[str, float]] = []
-    reader = csv.reader(fetch_text(TAIEX_OPEN_DATA_URL).splitlines())
+    url = TAIEX_OPEN_DATA_URL if date_hint is None else f"{TAIEX_OPEN_DATA_URL}&date={date_hint}"
+    reader = csv.reader(fetch_text(url).splitlines())
 
     for row in reader:
         if len(row) < 2:
@@ -248,6 +269,21 @@ def fetch_taiex_open_data() -> list[tuple[str, float]]:
 
     rows.sort(key=lambda item: item[0])
     return rows
+
+
+def fetch_taiex_open_data_since(last_known_date: str) -> list[tuple[str, float]]:
+    today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+    refresh_start = taiex_refresh_start(last_known_date)
+    rows = []
+
+    for month_start in month_starts_between(refresh_start, today):
+        rows.extend(fetch_taiex_open_data(month_start))
+
+    return merge_series(rows)
+
+
+def taiex_refresh_start(last_known_date: str) -> str:
+    return (datetime.strptime(last_known_date, "%Y-%m-%d") - timedelta(days=370)).strftime("%Y-%m-%d")
 
 
 def write_series(name: str, rows: list[tuple[str, float]]) -> None:
@@ -392,10 +428,15 @@ def main() -> int:
 
     taiex_existing_path = DATA_DIR / "taiex.csv"
     taiex_base_rows = read_csv_series(taiex_existing_path) if taiex_existing_path.exists() else read_legacy_series(LEGACY_DATA_IDS["taiex"])
-    taiex_latest_rows = fetch_taiex_open_data()
+    last_known_taiex_date = taiex_base_rows[-1][0]
+    taiex_refresh_start_date = taiex_refresh_start(last_known_taiex_date)
+    taiex_latest_rows = fetch_taiex_open_data_since(last_known_taiex_date)
     taiex_rows = merge_series(taiex_base_rows, taiex_latest_rows)
     write_series("taiex", taiex_rows)
-    print(f"Wrote taiex.csv with {len(taiex_rows)} rows; refreshed {len(taiex_latest_rows)} recent TWSE rows")
+    print(
+        f"Wrote taiex.csv with {len(taiex_rows)} rows; "
+        f"refreshed {len(taiex_latest_rows)} TWSE rows from {taiex_refresh_start_date}"
+    )
 
     yahoo_cache: dict[str, list[dict[str, float | str]]] = {}
     for output_name, symbol in YAHOO_SERIES.items():

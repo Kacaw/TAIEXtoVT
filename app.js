@@ -173,6 +173,8 @@ const taiwanSeriesConfigs = {
   }
 };
 
+const ONGOING_ADMINISTRATION_END_TS = Number.POSITIVE_INFINITY;
+
 const threeAdministrationSet = [
   {
     key: "ma",
@@ -197,7 +199,7 @@ const threeAdministrationSet = [
     label: "賴清德時期",
     shortLabel: "賴清德",
     officialStartTs: parseISODate("2024-05-20"),
-    officialEndTs: parseISODate("2026-04-15"),
+    officialEndTs: ONGOING_ADMINISTRATION_END_TS,
     fill: "rgba(255, 179, 110, 0.15)",
     textColor: "rgba(20, 32, 43, 0.74)"
   }
