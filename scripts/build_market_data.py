@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import math
 import re
 import ssl
 import time
@@ -167,6 +168,29 @@ def merge_series(*series_groups: list[tuple[str, float]]) -> list[tuple[str, flo
         for date, value in rows:
             merged[date] = value
     return sorted(merged.items())
+
+
+def preserve_equivalent_adjusted_closes(
+    rows: list[dict[str, float | str]], existing_path: Path
+) -> list[dict[str, float | str]]:
+    if not existing_path.exists():
+        return rows
+
+    existing_values = dict(read_csv_series(existing_path))
+    for row in rows:
+        date = str(row["date"])
+        fresh_value = float(row["adjclose"])
+        existing_value = existing_values.get(date)
+
+        # Yahoo can return tiny floating-point variations for the entire
+        # history. Preserve equivalent values while allowing real dividend
+        # adjustments to revise historical Adjusted Close data.
+        if existing_value is not None and math.isclose(
+            fresh_value, existing_value, rel_tol=1e-5, abs_tol=1e-7
+        ):
+            row["adjclose"] = existing_value
+
+    return rows
 
 
 def fetch_bytes(request: urllib.request.Request, timeout: int) -> bytes:
@@ -454,7 +478,9 @@ def main() -> int:
 
     yahoo_cache: dict[str, list[dict[str, float | str]]] = {}
     for output_name, symbol in YAHOO_SERIES.items():
-        rows = fetch_yahoo_chart(symbol)
+        rows = preserve_equivalent_adjusted_closes(
+            fetch_yahoo_chart(symbol), DATA_DIR / f"{output_name}.csv"
+        )
         yahoo_cache[output_name] = rows
         write_series(output_name, [(str(row["date"]), float(row["adjclose"])) for row in rows])
         print(f"Wrote {output_name}.csv from {symbol} with {len(rows)} rows")
