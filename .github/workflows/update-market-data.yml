@@ -3,15 +3,23 @@ name: Update Market Data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * 1-5"
-    - cron: "30 23 * * 1-5"
+    # 08:30 and 17:30 Asia/Taipei. Weekend runs are harmless and keep the
+    # schedule active even when exchanges are closed.
+    - cron: "30 0 * * *"
+    - cron: "30 9 * * *"
 
 permissions:
+  actions: write
   contents: write
+
+concurrency:
+  group: update-market-data
+  cancel-in-progress: false
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Check out repository
@@ -27,6 +35,9 @@ jobs:
       - name: Build latest market data
         run: python scripts/build_market_data.py
 
+      - name: Verify core data freshness
+        run: python scripts/check_market_data.py
+
       - name: Commit refreshed CSV files
         run: |
           git config user.name "github-actions[bot]"
@@ -38,3 +49,9 @@ jobs:
           fi
           git commit -m "chore: refresh market data"
           git push
+
+      - name: Keep scheduled workflow enabled
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/update-market-data.yml/enable"

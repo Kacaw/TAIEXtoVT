@@ -5,6 +5,7 @@ import io
 import json
 import re
 import ssl
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -168,6 +169,21 @@ def merge_series(*series_groups: list[tuple[str, float]]) -> list[tuple[str, flo
     return sorted(merged.items())
 
 
+def fetch_bytes(request: urllib.request.Request, timeout: int) -> bytes:
+    last_error: Exception | None = None
+
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout, context=SSL_CONTEXT) as response:
+                return response.read()
+        except Exception as error:
+            last_error = error
+            if attempt < 2:
+                time.sleep(2**attempt)
+
+    raise RuntimeError(f"Request failed after 3 attempts: {request.full_url}") from last_error
+
+
 def fetch_text(url: str) -> str:
     request = urllib.request.Request(
         url,
@@ -176,8 +192,7 @@ def fetch_text(url: str) -> str:
             "Accept": "*/*",
         },
     )
-    with urllib.request.urlopen(request, timeout=45, context=SSL_CONTEXT) as response:
-        return response.read().decode("utf-8-sig", errors="replace")
+    return fetch_bytes(request, timeout=45).decode("utf-8-sig", errors="replace")
 
 
 def fetch_yahoo_chart(symbol: str) -> list[dict[str, float | str]]:
@@ -201,8 +216,7 @@ def fetch_yahoo_chart(symbol: str) -> list[dict[str, float | str]]:
         },
     )
 
-    with urllib.request.urlopen(request, timeout=30) as response:
-        payload = json.load(response)
+    payload = json.loads(fetch_bytes(request, timeout=30))
 
     result = payload["chart"]["result"][0]
     timestamps = result.get("timestamp", [])
@@ -449,21 +463,37 @@ def main() -> int:
     write_series("tsmc_tw_close", tsmc_close_rows)
     print(f"Wrote tsmc_tw_close.csv with {len(tsmc_close_rows)} rows")
 
-    market_value_rows = fetch_listed_market_value_monthly()
-    write_series("tw_listed_market_value_monthly", market_value_rows)
-    print(f"Wrote tw_listed_market_value_monthly.csv with {len(market_value_rows)} rows")
+    market_value_path = DATA_DIR / "tw_listed_market_value_monthly.csv"
+    try:
+        market_value_rows = fetch_listed_market_value_monthly()
+        if not market_value_rows:
+            raise RuntimeError("FSC market value response contained no usable rows")
+        write_series("tw_listed_market_value_monthly", market_value_rows)
+        print(f"Wrote tw_listed_market_value_monthly.csv with {len(market_value_rows)} rows")
+    except Exception as error:
+        market_value_rows = read_csv_series(market_value_path)
+        print(f"WARNING: FSC market value refresh failed; using {len(market_value_rows)} existing rows: {error}")
 
-    current_tsmc_shares = fetch_current_tsmc_shares()
     split_rows = [
         (str(row["date"]), float(row["splitFactor"]))
         for row in yahoo_cache["tsmc_tw"]
         if float(row["splitFactor"]) != 1.0
     ]
-    shares_rows = build_tsmc_shares_estimated(market_value_rows, current_tsmc_shares, split_rows)
-    write_series("tsmc_shares_estimated", shares_rows)
-    print(f"Wrote tsmc_shares_estimated.csv with {len(shares_rows)} rows")
+
+    shares_path = DATA_DIR / "tsmc_shares_estimated.csv"
+    try:
+        current_tsmc_shares = fetch_current_tsmc_shares()
+        shares_rows = build_tsmc_shares_estimated(market_value_rows, current_tsmc_shares, split_rows)
+        write_series("tsmc_shares_estimated", shares_rows)
+        print(f"Wrote tsmc_shares_estimated.csv with {len(shares_rows)} rows")
+    except Exception as error:
+        shares_rows = read_csv_series(shares_path)
+        print(f"WARNING: TSMC shares refresh failed; using {len(shares_rows)} existing rows: {error}")
 
     weight_rows = build_tsmc_weight_series(tsmc_close_rows, shares_rows, market_value_rows)
+    if not weight_rows:
+        weight_rows = read_csv_series(DATA_DIR / "tsmc_weight_estimate.csv")
+        print("WARNING: Could not rebuild TSMC weights; using existing estimates")
     write_series("tsmc_weight_estimate", weight_rows)
     print(f"Wrote tsmc_weight_estimate.csv with {len(weight_rows)} rows")
 
